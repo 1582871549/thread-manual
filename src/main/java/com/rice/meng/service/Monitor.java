@@ -1,4 +1,4 @@
-package service;
+package com.rice.meng.service;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

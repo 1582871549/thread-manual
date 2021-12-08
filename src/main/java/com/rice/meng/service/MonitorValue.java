@@ -1,4 +1,4 @@
-package service;
+package com.rice.meng.service;
 
 import lombok.Data;
 

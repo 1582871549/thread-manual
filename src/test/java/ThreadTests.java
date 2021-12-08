@@ -1,5 +1,5 @@
 import org.junit.jupiter.api.Test;
-import service.Monitor;
+import com.rice.meng.service.Monitor;
 
 import java.util.ArrayList;
 import java.util.List;
