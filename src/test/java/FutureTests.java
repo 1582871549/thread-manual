@@ -1,159 +1,137 @@
 import com.google.common.util.concurrent.*;
+import com.rice.meng.common.threadpool.ThreadHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
+@Slf4j
 public class FutureTests {
 
-    private final ExecutorService service = Executors.newFixedThreadPool(4);
+    private final ExecutorService service = ThreadHelper.createFixedThreadPool(4, 100, "future");
 
     /**
      * 伪异步
-     *
+     * 
      * JDK 1.5 Callable
      */
     @Test
     public void testCallableMethod() throws ExecutionException, InterruptedException {
-
+        log.info("start assign task.");
         Future<String> future = service.submit(() -> {
-            System.out.println("关注why技术");
-            return "这次一定！";
+            log.info("working...");
+            return "done.";
         });
-        System.out.println("future的内容:" + future.get());
 
-        TimeUnit.SECONDS.sleep(2);
-        System.out.println("------------");
-    }
-
-    /**
-     * 伪异步
-     *
-     * JDK 1.5 Runnable
-     */
-    @Test
-    public void testRunnableMethod() throws ExecutionException, InterruptedException {
-
-        AtomicInteger atomicInteger = new AtomicInteger();
-
-        Future<AtomicInteger> future = service.submit(() -> {
-            System.out.println("关注why技术");
-            // 在这里进行计算逻辑
-            atomicInteger.set(5201314);
-        }, atomicInteger);
-
-        System.out.println("future的内容:" + future.get());
-        System.out.println("object equals: " + (atomicInteger.equals(future.get())));
-
-        TimeUnit.SECONDS.sleep(2);
-        System.out.println("------------");
+        log.info("future: [{}]", future.get());
+        log.info("do something...");
+        log.info("get off work!");
+        waiting(1);
+        log.info("end.");
     }
 
     /**
      * 异步回调
      *
      * JDK 1.5 Guava Listener
-     *
      * 从运行结果可以看出: 获取运行结果是在另外的线程里面执行的(thread-2)，完全没有阻塞主线程。
      */
     @Test
-    public void testListenerMethod() throws InterruptedException {
-
+    public void testListenerMethod() {
+        log.info("start assign task.");
         ListeningExecutorService executor = MoreExecutors.listeningDecorator(service);
 
         ListenableFuture<String> listenableFuture = executor.submit(() -> {
-            System.out.println(Thread.currentThread().getName()+"-女神：我开始化妆了，好了我叫你。");
-            TimeUnit.SECONDS.sleep(5);
-            return "化妆完毕了。";
+            log.info("working...");
+            waiting(3);
+            return "done.";
         });
 
         listenableFuture.addListener(() -> {
             try {
-                System.out.println(Thread.currentThread().getName()+"-future的内容:" + listenableFuture.get());
+                log.info("future: [{}]", listenableFuture.get());
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }, executor);
 
-        System.out.println(Thread.currentThread().getName()+"-等女神化妆的时候可以干点自己的事情。");
-
-        TimeUnit.SECONDS.sleep(6);
-        System.out.println("------------");
+        log.info("do something...");
+        log.info("get off work!");
+        waiting(4);
+        log.info("end.");
     }
 
     /**
      * 异步回调
      *
      * JDK 1.5 Guava FutureCallback
-     *
      * 从运行结果可以看出: 获取运行结果是在另外的线程里面执行的(thread-2)，完全没有阻塞主线程。
      */
     @Test
-    public void testFutureCallbackMethod() throws InterruptedException {
-
+    public void testFutureCallbackMethod() {
+        log.info("start assign task.");
         ListeningExecutorService executor = MoreExecutors.listeningDecorator(service);
 
         ListenableFuture<String> listenableFuture = executor.submit(() -> {
-            System.out.println(Thread.currentThread().getName()+"-女神：我开始化妆了，好了我叫你。");
-            TimeUnit.SECONDS.sleep(5);
-            return "化妆完毕了。";
+            log.info("working...");
+            waiting(3);
+            return "done.";
         });
 
         Futures.addCallback(listenableFuture, new FutureCallback<String>() {
             @Override
             public void onSuccess(String result) {
-                System.out.println(Thread.currentThread().getName()+"-future的内容:" + result);
+                log.info("result: [{}]", result);
             }
+
             @Override
             public void onFailure(Throwable t) {
-                System.out.println(Thread.currentThread().getName()+"-女神放你鸽子了。");
+                log.info("failed");
                 t.printStackTrace();
             }
         }, executor);
 
-        System.out.println(Thread.currentThread().getName()+"-等女神化妆的时候可以干点自己的事情。");
-        TimeUnit.SECONDS.sleep(6);
-        System.out.println("------------");
+        log.info("do something...");
+        log.info("get off work!");
+        waiting(4);
+        log.info("end.");
     }
 
     /**
      * 异步回调
      *
      * JDK 1.8 CompletableFuture
-     *
-     * 从运行结果可以看出: 获取运行结果是在另外的线程里面执行的(thread-2)，完全没有阻塞主线程。
      */
     @Test
-    public void testCompletableFutureMethod() throws InterruptedException {
-
+    public void testCompletableFutureMethod() {
+        log.info("start assign task.");
         CompletableFuture<String> completableFuture = CompletableFuture.supplyAsync(() -> {
-            System.out.println(Thread.currentThread().getName() + "-女神：我开始化妆了，好了我叫你。");
-            try {
-                TimeUnit.SECONDS.sleep(5);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            return "化妆完毕了。";
+            log.info("working...");
+            waiting(3);
+            return "done.";
         }, service);
 
-        completableFuture.whenComplete((returnStr, exception) -> {
+        completableFuture.whenComplete((result, exception) -> {
             if (exception == null) {
-                System.out.println(Thread.currentThread().getName() + returnStr);
+                log.info("result: [{}]", result);
             } else {
-                System.out.println(Thread.currentThread().getName() + "女神放你鸽子了。");
+                log.info("failed");
                 exception.printStackTrace();
             }
         });
 
-        System.out.println(Thread.currentThread().getName()+"-等女神化妆的时候可以干点自己的事情。");
-        TimeUnit.SECONDS.sleep(6);
-        System.out.println("------------");
+        log.info("do something...");
+        log.info("get off work!");
+        waiting(4);
+        log.info("end.");
     }
 
-
-
-
-
-
+    private void waiting(int seconds) {
+        try {
+            TimeUnit.SECONDS.sleep(seconds);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
 }
