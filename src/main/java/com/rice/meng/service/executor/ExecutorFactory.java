@@ -1,5 +1,7 @@
 package com.rice.meng.service.executor;
 
+import com.rice.meng.service.executor.impl.MultipleThreadTaskExecutor;
+import com.rice.meng.service.executor.impl.SingleThreadTaskExecutor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
@@ -18,14 +20,10 @@ public class ExecutorFactory {
     }
 
     public static Executor newExecutor() {
-        switch (type) {
-            case SINGLE_THREAD:
-                return new SingleThreadTaskExecutor();
-            case THREAD_PER_TASK:
-                return new ThreadPerTaskExecutor();
-            default:
-                return new SingleThreadTaskExecutor();
+        if (type == ExecutorTypeEnum.THREAD_PER_TASK) {
+            return new MultipleThreadTaskExecutor();
         }
+        return new SingleThreadTaskExecutor();
     }
 
     private static void readPropertiesFromConfigFile() {
